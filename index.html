@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>GreenGuard - Plant Disease Detector</title>
+<style>
+/* Minimal CSS: looks good and compact */
+body{font-family:Arial,sans-serif;background:#e9f7ef;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+.card{background:white;padding:20px;border-radius:12px;width:360px;box-shadow:0 6px 20px rgba(0,0,0,0.08);text-align:center}
+h1{color:#2e8b57;margin:0 0 8px}
+p{color:#444;font-size:14px}
+input,select,textarea,button{width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px solid #cfd8d4;font-size:14px}
+button{background:#2e8b57;color:#fff;border:none;cursor:pointer}
+.small{font-size:12px;color:#666;margin-top:6px}
+.result{margin-top:12px;padding:12px;border-radius:8px;background:#f1fff4;color:#1e6b2e}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>GreenGuard</h1>
+    <p>Upload a photo of the leaf to check plant health</p>
+
+    <input id="username" placeholder="Your name (optional)" />
+    <select id="plantType">
+      <option value="">Select plant type (optional)</option>
+      <option>Flower</option><option>Fruit Plant</option><option>Vegetable Plant</option><option>Tree</option>
+    </select>
+    <input type="file" id="imageInput" accept="image/*" />
+    <button id="analyzeBtn">Analyze Plant</button>
+
+    <div id="output" class="result" style="display:none"></div>
+    <div class="small">This uses a mock analysis. You can replace the mock with a real model later.</div>
+  </div>
+
+<script>
+/* Replace BACKEND_URL below with the backend URL after you deploy it (see deployment steps). */
+const BACKEND_URL = '<BACKEND_URL>';
+
+document.getElementById('analyzeBtn').addEventListener('click', async ()=>{
+  const file = document.getElementById('imageInput').files[0];
+  const username = document.getElementById('username').value || 'guest';
+  const plantType = document.getElementById('plantType').value || '';
+
+  if(!file){ alert('Please choose an image.'); return; }
+  if(!BACKEND_URL || BACKEND_URL.includes('<BACKEND_URL>')){ alert('Backend URL not configured yet. Follow deployment steps and update BACKEND_URL in this file.'); return; }
+
+  const fd = new FormData();
+  fd.append('image', file);
+  fd.append('username', username);
+  fd.append('plantType', plantType);
+
+  try {
+    const resp = await fetch(BACKEND_URL + '/api/analyze', { method:'POST', body: fd });
+    const j = await resp.json();
+    if(!j.ok){ alert('Analysis error: ' + (j.error||JSON.stringify(j))); return; }
+    // show result
+    const out = document.getElementById('output');
+    out.style.display = 'block';
+    out.innerHTML = `<b>Result:</b> ${j.analysis.verdict.toUpperCase()}<br>
+                     Confidence: ${Math.round((j.analysis.confidence||0)*100)}%<br>
+                     <b>Tips:</b><br>${(j.analysis.tips||[]).join('<br>')}`;
+  } catch(err){
+    console.error(err);
+    alert('Failed to reach backend. Check BACKEND_URL and CORS (see instructions).');
+  }
+});
+</script>
+</body>
+</html>
